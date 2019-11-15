@@ -109,10 +109,29 @@ rarecurve(C.BIN.Spr, ylab = "BIN Frequency")
 
 #PROVINCIAL AT PROPORTIONS####
 
+BIN.Prov <- Odonata %>%
+  filter(!is.na(Odonata$bin_uri)) %>%
+  filter(country == "Canada") %>%
+  filter(!is.na(province_state)) %>%
+  filter(str_detect(nucleotides, "[ACGT]"))
+
+
+#Check how many provinces have a well represented number of samples.  We'll use 100 samples as our cutoff. 
+
+table(C.BIN$province_state)
+
+
+#Looks like six provinces have 100+ samples.  Let's analyze the nucleotide data in each of these six datasets. 
+
+#First, turn our nucleotides into Biostrings.
+
+BIN.Prov$nucleotides <- DNAStringSet((BIN.Prov$nucleotides))
+
 ProvinceNuc <- function (x, type) { # Takes two strings as arguments: x = Name of Province or Country and type = either "Province" or "Country"
   
   if (type == 'province') { # if the string province has been passed as the 'type' string
-    X.NucFreq <- as.data.frame(letterFrequency(BIN.Prov$Nucleotides, letters = c("A", "C", "G", "T", "N"))) %>%
+    print("province")
+    X.NucFreq <- as.data.frame(letterFrequency(BIN.Prov$nucleotides, letters = c("A", "C", "G", "T", "N"))) %>%
       filter(BIN.Prov$province_state == x) # select only the rows that contain the province of interest
   }
   
@@ -132,37 +151,17 @@ ProvinceNuc <- function (x, type) { # Takes two strings as arguments: x = Name o
   
 }
 
-BritishColumbia <- ProvinceNuc("British Columbia", "province") # Call the function ProvinceNuc with "British Columbia" and "province" as the arguments. Assign the output to a variable called BritishColumbia
+BritishColumbia <- ProvinceNuc("British Columbia", "province") 
+# Call the function ProvinceNuc with "British Columbia" and "province" as the arguments. Assign the output to a variable called BritishColumbia
 Alberta <- ProvinceNuc("Alberta", "province")
 Manitoba <- ProvinceNuc("Manitoba", "province")
 Ontario <- ProvinceNuc("Ontario", "province")
-Saskatchewan <- Province("Saskatchewan", "province")
-NewBrunswick <- Province("New Brunswick", "province")
+Saskatchewan <- ProvinceNuc("Saskatchewan", "province")
+NewBrunswick <- ProvinceNuc("New Brunswick", "province")
 Canada <- ProvinceNuc("Canada", "country") # Call the function ProvinceNuc with the "Canada" and "country" as the arguments. Assign the output to the variable called Canada
 
 #Which provinces have the Odonata entries with the greatest variation in AT proportions compared to the national average?
 
-
-#Before choosing provinces, filter out the following samples by:  
-#BIN NAs, Province NAs, missing nucleotide data, or anything without COI-5P as the markercode.
-
-BIN.Prov <- Odonata %>%
-  filter(!is.na(Odonata$bin_uri)) %>%
-  filter(country == "Canada") %>%
-  filter(!is.na(province_state)) %>%
-  filter(str_detect(nucleotides, "[ACGT]"))
-
-
-#Check how many provinces have a well represented number of samples.  We'll use 100 samples as our cutoff. 
-
-table(C.BIN$province_state)
-
-
-#Looks like six provinces have 100+ samples.  Let's analyze the nucleotide data in each of these six datasets. 
-
-#First, turn our nucleotides into Biostrings.
-
-BIN.Prov$nucleotides <- DNAStringSet((BIN.Prov$nucleotides))
 
 
 #Now determine the mean AT proportion for each of the six provinces to be analyzed.  
@@ -200,40 +199,35 @@ t.test(NewBrunswick[[2]][6], Canada[[2]][6])
 #Let's clean up the environment and explore these two provinces more.  
 # Here I am using the gdata library to clean up the global environment more efficiently. Below you will see the 'keep' function, where you can specify which objects you would like to keep. First, I usually use keep by itself, and it prints out everything that it would throw away, then I use sure=TRUE to make it actually throw everything away. 
 library(gdata)
-keep(Alberta, NewBrunswick, Canada, Odonata)
+keep(Alberta,NewBrunswick, Canada, Odonata)
 
 # That looks about right! 
 # Now I will add sure = TRUE to actually get rid of everything except Odonata, Alberta, NewBrunswick and Canada.
 
 keep(Alberta, NewBrunswick, Canada, Odonata, sure = TRUE)
 
-
 #EXTRAPOLATION TO DETERMINE BEST PROVINCE####
 
 #Now let's use the interpolation and extrapolation function iNEXT.  We can compare data between each province to direct us to which province is best for our trip to discover diverse Odonata samples.  iNEXT allows us to enter the calculation into ggplot so we can visualize the sample coverage data. 
 
-# This function creates an iNEXT structure used for plotting. 
-make_iNEXT <- function(prov_of_interest) { # Takes x, which is the name of the province of interest as a string
-  
-  # Filter the original Odonata dataset for samples for the province of interest with a BIN entry.
-  Dataset <- Odonata %>%
-    filter(!is.na(Odonata$bin_uri)) %>% # Ensure there are no NAs 
-    filter(province_state == x) 
-  
-  BINs <- Dataset[, 8] # Further subset the data to only contain the BIN_uri column, column 8.
-  
-  colnames(BINs) <- "Freq" # Name this column "Freq".
-  
-  BIN.Freq <- data.frame(table(BINs$Freq)) # Create a data frame listing the frequency of unique BINs in AB.
-  
-  BIN.Freq.Only <- BIN.Freq$Freq # Change this into an atomic vector. 
-  
-  BIN.i <- iNEXT(BIN.Freq.Only) # Apply the iNEXT function to the BIN Frequency.
-  
-  return(BIN.i)
-  
+plotProvince <- function(x) {
+
+Dataset <- Odonata %>%
+  filter(!is.na(Odonata$bin_uri)) %>%
+  filter(province_state == x)
+BINs <- Dataset[, 8] 
+colnames(BINs) <- "Freq"
+BIN.Freq <- data.frame(table(BINs$Freq))
+BIN.Freq.Only <- BIN.Freq$Freq
+
+BIN.i <- iNEXT(BIN.Freq.Only)
+
+return(BIN.i)
 }
 
+
+
+# AB.BIN.i <- iNEXT(AB.BIN.Freq.Only, )
 AB.BIN.i <- plotProvince("Alberta")
 AB.BIN.i
 
@@ -248,10 +242,7 @@ ggiNEXT(x = AB.BIN.i, type = 1) + theme_linedraw(base_size = 18, base_rect_size 
 #Filter the original Odonata dataset for New Brunswick samples with a BIN entry.
 
 NB.BIN.i <- plotProvince("New Brunswick")
-
-#Plot this using ggiNEXT.  Our arguments are set to project the number of potential unique BIN entries that have yet to be sampled and the number of samples required to uncover these unique BINs.
 ggiNEXT(x = NB.BIN.i, type = 1) + theme_linedraw(base_size = 18, base_rect_size = 1) + scale_colour_manual(values=c("lightblue")) + scale_fill_manual(values=c("green"))
-
 
 
 #Great.  Let's analyze the results of our plots.  
@@ -268,5 +259,3 @@ ggiNEXT(x = NB.BIN.i, type = 1) + theme_linedraw(base_size = 18, base_rect_size 
 #The iNEXT function was found at:
 
 #Hsieh T.C., Ma K.H., Chao, A. (2019). A Quick Introduction to iNEXT via Examples. https://cran.r-project.org/web/packages/iNEXT/vignettes/Introduction.html [9]
-
-

@@ -210,17 +210,20 @@ keep(Alberta, NewBrunswick, Canada, Odonata, sure = TRUE)
 
 #Now let's use the interpolation and extrapolation function iNEXT.  We can compare data between each province to direct us to which province is best for our trip to discover diverse Odonata samples.  iNEXT allows us to enter the calculation into ggplot so we can visualize the sample coverage data. 
 
-plotProvince <- function(x) {
-
+make_iNEXT <- function(prov_of_interest) {
+  
+  # Takes x, which is the name of the province of interest as a string
+  
+  # Filter the original Odonata dataset for samples for the province of interest with a BIN entry.
 Dataset <- Odonata %>%
   filter(!is.na(Odonata$bin_uri)) %>%
-  filter(province_state == x)
-BINs <- Dataset[, 8] 
-colnames(BINs) <- "Freq"
-BIN.Freq <- data.frame(table(BINs$Freq))
-BIN.Freq.Only <- BIN.Freq$Freq
+  filter(province_state == prov_of_interest)
+BINs <- Dataset[, 8]  # Further subset the data to only contain the BIN_uri column, column 8.
+colnames(BINs) <- "Freq" # Name this column "Freq".
+BIN.Freq <- data.frame(table(BINs$Freq)) # Create a data frame listing the frequency of unique BINs in AB.
+BIN.Freq.Only <- BIN.Freq$Freq # Change this into an atomic vector. 
 
-BIN.i <- iNEXT(BIN.Freq.Only)
+BIN.i <- iNEXT(BIN.Freq.Only) # Apply the iNEXT function to the BIN Frequency.
 
 return(BIN.i)
 }
@@ -228,7 +231,7 @@ return(BIN.i)
 
 
 # AB.BIN.i <- iNEXT(AB.BIN.Freq.Only, )
-AB.BIN.i <- plotProvince("Alberta")
+AB.BIN.i <- make_iNEXT("Alberta")
 AB.BIN.i
 
 #Plot this using ggiNEXT.  Our arguments are set to project the number of potential unique BIN entries that have yet to be sampled and the number of samples required to uncover these unique BINs.
@@ -241,7 +244,7 @@ ggiNEXT(x = AB.BIN.i, type = 1) + theme_linedraw(base_size = 18, base_rect_size 
 
 #Filter the original Odonata dataset for New Brunswick samples with a BIN entry.
 
-NB.BIN.i <- plotProvince("New Brunswick")
+NB.BIN.i <- make_iNEXT("New Brunswick")
 ggiNEXT(x = NB.BIN.i, type = 1) + theme_linedraw(base_size = 18, base_rect_size = 1) + scale_colour_manual(values=c("lightblue")) + scale_fill_manual(values=c("green"))
 
 

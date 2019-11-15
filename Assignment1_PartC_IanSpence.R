@@ -109,13 +109,6 @@ rarecurve(C.BIN.Spr, ylab = "BIN Frequency")
 
 #PROVINCIAL AT PROPORTIONS####
 
-
-#Which provinces have the Odonata entries with the greatest variation in AT proportions compared to the national average?
-
-
-#Before choosing provinces, filter out the following samples by:  
-#BIN NAs, Province NAs, missing nucleotide data, or anything without COI-5P as the markercode.
-
 BIN.Prov <- Odonata %>%
   filter(!is.na(Odonata$bin_uri)) %>%
   filter(country == "Canada") %>%
@@ -134,149 +127,52 @@ table(C.BIN$province_state)
 
 BIN.Prov$nucleotides <- DNAStringSet((BIN.Prov$nucleotides))
 
+ProvinceNuc <- function (x, type) { # Takes two strings as arguments: x = Name of Province or Country and type = either "Province" or "Country"
+  
+  if (type == 'province') { # if the string province has been passed as the 'type' string
+    print("province")
+    X.NucFreq <- as.data.frame(letterFrequency(BIN.Prov$nucleotides, letters = c("A", "C", "G", "T", "N"))) %>%
+      filter(BIN.Prov$province_state == x) # select only the rows that contain the province of interest
+  }
+  
+  else { # if the string passed was not of type province (usually this means country)
+    X.NucFreq <- as.data.frame(letterFrequency(BIN.Prov$nucleotides, letters = c("A", "C", "G", "T", "N")))
+  }
+  
+  X.NucFreq <- X.NucFreq %>% 
+    filter(X.NucFreq$N == 0) # Filter out any 0s 
+  X.AT.Prop <- X.NucFreq %>%
+    mutate(ATproportion = ((A + T) / (A + T + G + C))) # Determine the proportation of AT and use mutate to create a new column containing this value 
+  X.AT.mean <- mean(X.AT.Prop$ATproportion) # Determine the mean of AT proportions
+  
+  allCalcs <- list(X.NucFreq, X.AT.Prop, X.AT.mean) # Create a list of all components made in this function
+  
+  return(allCalcs) # Return the list
+  
+}
+
+BritishColumbia <- ProvinceNuc("British Columbia", "province") 
+# Call the function ProvinceNuc with "British Columbia" and "province" as the arguments. Assign the output to a variable called BritishColumbia
+Alberta <- ProvinceNuc("Alberta", "province")
+Manitoba <- ProvinceNuc("Manitoba", "province")
+Ontario <- ProvinceNuc("Ontario", "province")
+Saskatchewan <- ProvinceNuc("Saskatchewan", "province")
+NewBrunswick <- ProvinceNuc("New Brunswick", "province")
+Canada <- ProvinceNuc("Canada", "country") # Call the function ProvinceNuc with the "Canada" and "country" as the arguments. Assign the output to the variable called Canada
+
+#Which provinces have the Odonata entries with the greatest variation in AT proportions compared to the national average?
+
+
 
 #Now determine the mean AT proportion for each of the six provinces to be analyzed.  
 
-#Determine the nucleotide frequencies.
-
-BC.NucFreq <- as.data.frame(letterFrequency(BIN.Prov$nucleotides, letters = c("A", "C", "G", "T", "N"))) %>%
-  filter(BIN.Prov$province_state == "British Columbia")
-
-
-#Filter out any samples with Ns present. 
-
-BC.NucFreq <- BC.NucFreq %>%
-  filter(BC.NucFreq$N == 0)
-
-
-#Add another column with the AT proportion. 
-
-BC.AT.Prop <- BC.NucFreq %>%
-  mutate(ATproportion = ((A + T) / (A + T + G + C)))
-
-
-#Determine the mean of AT proportions across all samples from BC. 
-
-BC.AT.mean <- mean(BC.AT.Prop$ATproportion)
-
-
-
-#Repeat for all six provinces above the 100 sample threshold we have set. 
-
-#Commenting is the same as it was in BC for all other provinces. 
-
-
-#Alberta
-
-AB.NucFreq <- as.data.frame(letterFrequency(BIN.Prov$nucleotides, letters = c("A", "C", "G", "T", "N"))) %>%
-  filter(BIN.Prov$province_state == "Alberta")
-
-AB.NucFreq <- AB.NucFreq %>%
-  filter(AB.NucFreq$N == 0)
-
-AB.AT.Prop <- AB.NucFreq %>%
-  mutate(ATproportion = ((A + T) / (A + T + G + C)))
-
-AB.AT.mean <- mean(AB.AT.Prop$ATproportion)
-
-
-#Manitoba
-
-MN.NucFreq <- as.data.frame(letterFrequency(BIN.Prov$nucleotides, letters = c("A", "C", "G", "T", "N"))) %>%
-  filter(BIN.Prov$province_state == "Manitoba")
-
-MN.NucFreq <- MN.NucFreq %>%
-  filter(MN.NucFreq$N == 0)
-
-MN.AT.Prop <- MN.NucFreq %>%
-  mutate(ATproportion = ((A + T) / (A + T + G + C)))
-
-MN.AT.mean <- mean(MN.AT.Prop$ATproportion)
-
-
-#New Brunswick
-
-NB.NucFreq <- as.data.frame(letterFrequency(BIN.Prov$nucleotides, letters = c("A", "C", "G", "T", "N"))) %>%
-  filter(BIN.Prov$province_state == "New Brunswick")
-
-NB.NucFreq <- NB.NucFreq %>%
-  filter(NB.NucFreq$N == 0)
-
-NB.AT.Prop <- NB.NucFreq %>%
-  mutate(ATproportion = ((A + T) / (A + T + G + C)))
-
-NB.AT.mean <- mean(NB.AT.Prop$ATproportion)
-
-
-#Ontario
-
-ON.NucFreq <- as.data.frame(letterFrequency(BIN.Prov$nucleotides, letters = c("A", "C", "G", "T", "N"))) %>%
-  filter(BIN.Prov$province_state == "Ontario")
-
-ON.NucFreq <- ON.NucFreq %>%
-  filter(ON.NucFreq$N == 0)
-
-ON.AT.Prop <- ON.NucFreq %>%
-  mutate(ATproportion = ((A + T) / (A + T + G + C)))
-
-ON.AT.mean <- mean(ON.AT.Prop$ATproportion)
-
-
-#Saskatchewan
-
-SK.NucFreq <- as.data.frame(letterFrequency(BIN.Prov$nucleotides, letters = c("A", "C", "G", "T", "N"))) %>%
-  filter(BIN.Prov$province_state == "Saskatchewan")
-
-SK.NucFreq <- SK.NucFreq %>%
-  filter(SK.NucFreq$N == 0)
-
-SK.AT.Prop <- SK.NucFreq %>%
-  mutate(ATproportion = ((A + T) / (A + T + G + C)))
-
-SK.AT.mean <- mean(SK.AT.Prop$ATproportion)
-
-
-
-#Great, now let's calculate the mean AT proportion across Canada so we can compare these provinces to determine where the most diverse groups may be located.
-
-#The commenting for the following is the same except there in no need to filter by province as we want data from the whole country. 
-
-
-Can.Nuc.Freq <- as.data.frame(letterFrequency(BIN.Prov$nucleotides, letters = c("A", "C", "G", "T", "N")))
-
-  Can.Nuc.Freq <- Can.Nuc.Freq %>%
-  filter(Can.Nuc.Freq$N == 0)
-
-  Can.AT.Prop <- Can.Nuc.Freq %>%
-    mutate(ATproportion = ((A + T) / (A + T + G + C)))
-  
-  Can.AT.mean <- mean(Can.AT.Prop$ATproportion)
-
-  
-  
 #Let's determine the provinces with the largest difference in mean AT proportion compared to the Canadian dataset.  
   
 
-#Make a vector with the mean AT proportion of the provinces.
+Prov.AT.Data <- c(Alberta[3], BritishColumbia[3], Manitoba[3], Ontario[3], Saskatchewan[3], NewBrunswick[3]) # Create a list of the AT means for the provinces listed using the third element of each list 
+amnt_sub <- as.numeric(Canada[3]) # Create a variable called amnt_sub which represents the amount to subtract by downstream; here it is the AT mean for Canada
+Prov.Dif <- lapply(Prov.AT.Data, function(x, amnt_sub) x - amnt_sub, amnt_sub = amnt_sub) # Use lapply to subtract amnt_sub from each element of the list 'Prov.AT.Data', which we made upstream and assign the resultant list to Prov.Dif
 
-Prov.AT.Data <- data.frame(AB.AT.mean, BC.AT.mean, MN.AT.mean, ON.AT.mean, SK.AT.mean, NB.AT.mean, Can.AT.mean)
-
-
-#Now, determine the difference in AT proportion between each province and the national mean.
-
-AB.Dif <- AB.AT.mean - Can.AT.mean
-BC.Dif <- BC.AT.mean - Can.AT.mean
-MN.Dif <- MN.AT.mean - Can.AT.mean
-ON.Dif <- ON.AT.mean - Can.AT.mean
-SK.Dif <- SK.AT.mean - Can.AT.mean
-NB.Dif <- NB.AT.mean - Can.AT.mean
-
-#Make a vector with all province difference values. 
-
-Prov.Dif <- c(AB.Dif, BC.Dif, MN.Dif, ON.Dif, SK.Dif, NB.Dif)
-
-#Check the max, ie. the province with the greatest relative AT proportion to the national mean.
-Prov.Dif
 which.max(Prov.Dif)
 
 #check the min, ie. the province with the lowest relative AT proportion to the national mean.
@@ -287,68 +183,56 @@ which.min(Prov.Dif)
 
 #Let's check if our results could have happened by chance or not.
 
-#Is the AT proportion of British Columbia significantly different than that of Canada?
+# Use list index to access specific dataframe and column 
+# For example, here we are using the second element of the list named Alberta, which is a dataframe, and the 6th column of that dataframe. 
 
-t.test(AB.AT.Prop$ATproportion, Can.AT.Prop$ATproportion)
+t.test(Alberta[[2]][6], Canada[[2]][6])
 
 #Yes, it is.
 #Is the AT proportion of New Brunswick significantly different than that of Canada?
-
-t.test(NB.AT.Prop$ATproportion, Can.AT.Prop$ATproportion)
+t.test(NewBrunswick[[2]][6], Canada[[2]][6])
 
 #Yes.  It's also significant. 
 
 
 
 #Let's clean up the environment and explore these two provinces more.  
+# Here I am using the gdata library to clean up the global environment more efficiently. Below you will see the 'keep' function, where you can specify which objects you would like to keep. First, I usually use keep by itself, and it prints out everything that it would throw away, then I use sure=TRUE to make it actually throw everything away. 
+library(gdata)
+keep(Alberta,NewBrunswick, Canada, Odonata)
 
+# That looks about right! 
+# Now I will add sure = TRUE to actually get rid of everything except Odonata, Alberta, NewBrunswick and Canada.
 
-rm(AB.AT.Prop, BC.AT.Prop, MN.AT.Prop, NS.AT.Prop, NW.AT.Prop, ON.AT.Prop, QB.AT.Prop, PE.AT.Prop, SK.AT.Prop, YK.AT.Prop, NB.AT.Prop, AB.NucFreq, BC.NucFreq, MN.NucFreq, NS.NucFreq, NW.NucFreq, ON.NucFreq, QB.NucFreq, PE.NucFreq, SK.NucFreq, YK.NucFreq, NB.NucFreq, AB.AT.mean, BC.AT.mean, MN.AT.mean, NS.AT.mean, NW.AT.mean, ON.AT.mean, QB.AT.mean, PE.AT.mean, SK.AT.mean, YK.AT.mean, NB.AT.mean, BIN.Var, C.BIN.Var, C.BIN, BIN.Prov, BIN.Spr, C.BIN.Spr, AB.Dif, BC.Dif, MN.Dif, NB.Dif, ON.Dif, SK.Dif, Can.AT.Prop, Can.Nuc.Freq, Prov.AT.Data, Can.AT.mean, Prov.Dif, BIN.Count, C.BIN.Count)
-
-
-
-
+keep(Alberta, NewBrunswick, Canada, Odonata, sure = TRUE)
 
 #EXTRAPOLATION TO DETERMINE BEST PROVINCE####
 
 #Now let's use the interpolation and extrapolation function iNEXT.  We can compare data between each province to direct us to which province is best for our trip to discover diverse Odonata samples.  iNEXT allows us to enter the calculation into ggplot so we can visualize the sample coverage data. 
 
-#First determine the sample coverage in Alberta.
-
-#Filter the original Odonata dataset for AB samples with a BIN entry.
-
-AB.Dataset <- Odonata %>%
+make_iNEXT <- function(prov_of_interest) {
+  
+  # Takes x, which is the name of the province of interest as a string
+  
+  # Filter the original Odonata dataset for samples for the province of interest with a BIN entry.
+Dataset <- Odonata %>%
   filter(!is.na(Odonata$bin_uri)) %>%
-  filter(province_state == "Alberta")
+  filter(province_state == prov_of_interest)
+BINs <- Dataset[, 8]  # Further subset the data to only contain the BIN_uri column, column 8.
+colnames(BINs) <- "Freq" # Name this column "Freq".
+BIN.Freq <- data.frame(table(BINs$Freq)) # Create a data frame listing the frequency of unique BINs in AB.
+BIN.Freq.Only <- BIN.Freq$Freq # Change this into an atomic vector. 
+
+BIN.i <- iNEXT(BIN.Freq.Only) # Apply the iNEXT function to the BIN Frequency.
+
+return(BIN.i)
+}
 
 
-#Further subset the data to only contain the BIN_uri column, column 8.
 
-AB.BINs <- AB.Dataset[, 8]
-
-
-#Name this column "Freq".
-
-colnames(AB.BINs) <- "Freq"
-
-
-#Create a data frame listing the frequency of unique BINs in AB. 
-
-AB.BIN.Freq <- data.frame(table(AB.BINs$Freq))
-
-
-#Change this into an atomic vector. 
-
-AB.BIN.Freq.Only <- AB.BIN.Freq$Freq
-
-
-#Apply the iNEXT function to the AB BIN Frequency.
-
-iNEXT(AB.BIN.Freq.Only, )
-
-#Now let's plot this data using ggiNEXT.  First, put the iNEXT output into an object.
-
-AB.BIN.i <- iNEXT(AB.BIN.Freq.Only, )
+# AB.BIN.i <- iNEXT(AB.BIN.Freq.Only, )
+AB.BIN.i <- make_iNEXT("Alberta")
+AB.BIN.i
 
 #Plot this using ggiNEXT.  Our arguments are set to project the number of potential unique BIN entries that have yet to be sampled and the number of samples required to uncover these unique BINs.
 
@@ -360,42 +244,9 @@ ggiNEXT(x = AB.BIN.i, type = 1) + theme_linedraw(base_size = 18, base_rect_size 
 
 #Filter the original Odonata dataset for New Brunswick samples with a BIN entry.
 
-NB.Dataset <- Odonata %>%
-  filter(!is.na(Odonata$bin_uri)) %>%
-  filter(province_state == "New Brunswick")
+NB.BIN.i <- make_iNEXT("New Brunswick")
+ggiNEXT(x = NB.BIN.i, type = 1) + theme_linedraw(base_size = 18, base_rect_size = 1) + scale_colour_manual(values=c("lightblue")) + scale_fill_manual(values=c("green"))
 
-
-#Further subset the data to only contain the BIN_uri column, column 8.
-
-NB.BINs <- NB.Dataset[, 8]
-
-
-#Name this column "Freq".
-
-colnames(NB.BINs) <- "Freq"
-
-
-#Create a data frame listing the frequency of unique BINs in NB. 
-
-NB.BIN.Freq <- data.frame(table(NB.BINs$Freq))
-
-
-#Change this into an atomic vector.
-
-NB.BIN.Freq.Only <- NB.BIN.Freq$Freq
-
-
-#Apply the iNEXT function to the NB BIN Frequency.
-
-iNEXT(NB.BIN.Freq.Only, )
-
-#Let's plot this data using ggiNEXT.  First, put the iNEXT output into an object.
-
-NB.BIN.i <- iNEXT(NB.BIN.Freq.Only, )
-
-#Plot this using ggiNEXT.  Our arguments are set to project the number of potential unique BIN entries that have yet to be sampled and the number of samples required to uncover these unique BINs.
-
-ggiNEXT(x = NB.BIN.i, type = 1) + theme_linedraw(base_size = 18, base_rect_size = 1)
 
 #Great.  Let's analyze the results of our plots.  
 
@@ -411,5 +262,3 @@ ggiNEXT(x = NB.BIN.i, type = 1) + theme_linedraw(base_size = 18, base_rect_size 
 #The iNEXT function was found at:
 
 #Hsieh T.C., Ma K.H., Chao, A. (2019). A Quick Introduction to iNEXT via Examples. https://cran.r-project.org/web/packages/iNEXT/vignettes/Introduction.html [9]
-
-
